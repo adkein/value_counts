@@ -3,7 +3,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
 
 #define MAX_LINE 4096
 #define INITIAL_CAPACITY 16384  // Increased initial size
@@ -40,22 +39,10 @@ Counter* counter_create() {
     return c;
 }
 
-// Compare function for sorting by key (alphabetically)
+// Compare function for qsort
 int compare_entries(const void *a, const void *b) {
     const Entry *ea = *(const Entry **)a;
     const Entry *eb = *(const Entry **)b;
-    return strcmp(ea->key, eb->key);
-}
-
-// New compare function for sorting by count (descending)
-int compare_entries_by_count(const void *a, const void *b) {
-    const Entry *ea = *(const Entry **)a;
-    const Entry *eb = *(const Entry **)b;
-    // Sort by count descending (subtract b from a)
-    if (ea->count != eb->count) {
-        return eb->count - ea->count;
-    }
-    // If counts are equal, sort alphabetically
     return strcmp(ea->key, eb->key);
 }
 
@@ -83,25 +70,11 @@ Entry* counter_get(Counter *c, const char *key) {
     return entry;
 }
 
-// Add function to get terminal height
-int get_terminal_height() {
-    struct winsize w;
-    if (ioctl(STDERR_FILENO, TIOCGWINSZ, &w) == -1) {
-        return 25;  // Default if we can't get terminal size
-    }
-    return w.ws_row;
-}
-
-// Modify print_progress to respect terminal height
-void print_progress(Counter *c, int sort_by_count) {
+// Print progress to stderr
+void print_progress(Counter *c) {
     // Clear screen (ANSI escape codes)
     fprintf(stderr, "\033[2J\033[H");
     fprintf(stderr, "value_counts intermediate results:\n");
-    
-    // Get terminal height and calculate max entries to show
-    // Subtract 2 for header and potential truncation message
-    int max_entries = get_terminal_height() - 2;
-    if (max_entries < 1) max_entries = 1;
     
     // Convert hash table to array for sorting
     Entry **entries = malloc(c->size * sizeof(Entry*));
@@ -114,19 +87,12 @@ void print_progress(Counter *c, int sort_by_count) {
         }
     }
     
-    // Sort entries using the appropriate comparison function
-    qsort(entries, c->size, sizeof(Entry*), 
-          sort_by_count ? compare_entries_by_count : compare_entries);
+    // Sort entries
+    qsort(entries, c->size, sizeof(Entry*), compare_entries);
     
-    // Print counts up to terminal height
-    size_t entries_to_show = (c->size < max_entries) ? c->size : max_entries;
-    for (size_t i = 0; i < entries_to_show; i++) {
+    // Print counts
+    for (size_t i = 0; i < c->size; i++) {
         fprintf(stderr, "%s,%d\n", entries[i]->key, entries[i]->count);
-    }
-    
-    // Show truncation message if needed
-    if (c->size > entries_to_show) {
-        fprintf(stderr, "... (%zu more entries)\n", c->size - entries_to_show);
     }
     
     free(entries);
@@ -149,15 +115,16 @@ void counter_free(Counter *c) {
 
 int main(int argc, char *argv[]) {
     int progress_interval = 0;
-    int sort_by_count = 0;  // New flag for rank option
+    char delimiter = '\t';  // Default to tab
     
     // Parse arguments
     for (int i = 1; i < argc; i++) {
-        if ((strcmp(argv[i], "--progress") == 0) && i + 1 < argc) {
+        if (strcmp(argv[i], "--progress") == 0 && i + 1 < argc) {
             progress_interval = atoi(argv[i + 1]);
             i++;
-        } else if (strcmp(argv[i], "--rank") == 0 || strcmp(argv[i], "-r") == 0) {
-            sort_by_count = 1;
+        } else if ((strcmp(argv[i], "--delim") == 0 || strcmp(argv[i], "-d") == 0) && i + 1 < argc) {
+            delimiter = argv[i + 1][0];  // Take first character of delimiter argument
+            i++;
         }
     }
     
@@ -179,7 +146,7 @@ int main(int argc, char *argv[]) {
         
         // Show progress if requested
         if (progress_interval > 0 && (time(NULL) - last_update) >= progress_interval) {
-            print_progress(counts, sort_by_count);
+            print_progress(counts);
             last_update = time(NULL);
         }
     }
@@ -201,11 +168,17 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    // Sort and print results (always by key for final output)
+    // Sort and print results
     qsort(entries, counts->size, sizeof(Entry*), compare_entries);
     
+    // Update progress output format
     for (size_t i = 0; i < counts->size; i++) {
-        printf("%s,%d\n", entries[i]->key, entries[i]->count);
+        fprintf(stderr, "%s%c%d\n", entries[i]->key, delimiter, entries[i]->count);
+    }
+    
+    // Update final output format
+    for (size_t i = 0; i < counts->size; i++) {
+        printf("%s%c%d\n", entries[i]->key, delimiter, entries[i]->count);
     }
     
     free(entries);

@@ -18,13 +18,15 @@ the option to periodically print running results, but note that this slows it do
 
 ```bash
 make
-cat some_big_file | ./value_counts [--progress <n>] [--rank]
+cat some_big_file | ./value_counts [--progress <n>] [--rank] [--delim <delimiter>]
 ```
 
 where `n` is the period of printing running results.
 
 Pass `--rank` (short form `-r`) to make the intermediate results output ordered by value count descending
 rather than by value.
+
+Pass `--delim` (short form (`-d`) to adjust the delimiter between the value and the value count in the output.
 
 ## Notes
 

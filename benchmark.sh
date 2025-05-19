@@ -37,7 +37,6 @@ fi
 echo "--- Test Parameters ---"
 echo "Number of lines:      $NUM_LINES"
 echo "Number of unique_val: $NUM_UNIQUE"
-echo "String length:        $MIN_LEN-$MAX_LEN"
 echo "-----------------------"
 echo ""
 
@@ -83,7 +82,7 @@ echo "Verifying correctness..."
 
 # Format native output: Extract count ($1) and value ($2), print as "value,count"
 # Use awk to reorder and reformat. The input to awk is already sorted by value (due to `sort`).
-awk '{$1=$1; print $2","$1}' "$OUTPUT_NATIVE_RAW" > "$OUTPUT_NATIVE_FORMATTED"
+awk '{$1=$1; print $2"\t"$1}' "$OUTPUT_NATIVE_RAW" > "$OUTPUT_NATIVE_FORMATTED"
 
 # Diff the results
 if diff -q "$OUTPUT_SORTUNIQ" "$OUTPUT_NATIVE_FORMATTED" >/dev/null; then
