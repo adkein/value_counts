@@ -8,7 +8,7 @@ def print_progress(counts):
     """Prints current results"""
     # Clear previous lines (ANSI escape codes)
     sys.stderr.write("\033[2J\033[H")  # Clear screen and move cursor to top
-    sys.stderr.write("Intermediate results:\n")
+    sys.stderr.write("sortuniq intermediate results:\n")
     # Print current counts
     for key, count in sorted(counts.items()):
         sys.stderr.write(f"{key},{count}\n")
@@ -18,12 +18,11 @@ def main():
     """
     Reads newline-delimited strings from stdin,
     counts occurrences, and prints them sorted by key.
-    Shows intermediate results every 5 seconds if --progress flag is used.
+    Shows intermediate results every n seconds if --progress flag is used.
     """
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Count and sort unique lines from stdin.')
-    parser.add_argument('--progress', action='store_true', 
-                       help='Show progress updates every 5 seconds')
+    parser.add_argument('--progress', type=int, help='Show progress updates every n seconds')
     args = parser.parse_args()
 
     counts = Counter()
@@ -35,11 +34,11 @@ def main():
             counts[line.rstrip('\n')] += 1
             
             # Check if we should update progress
-            if args.progress and (time.time() - last_update) >= 5:
+            if args.progress is not None and (time.time() - last_update) >= args.progress:
                 print_progress(counts)
                 last_update = time.time()
     finally:
-        if args.progress:
+        if args.progress is not None:
             # Clear intermediate output
             sys.stderr.write("\033[2J\033[H")
             sys.stderr.flush()
