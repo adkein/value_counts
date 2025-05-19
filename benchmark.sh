@@ -2,13 +2,9 @@
 
 # Check for flags
 PRESERVE=false
-USE_PYTHON=false
 for arg in "$@"; do
     if [ "$arg" = "--preserve" ]; then
         PRESERVE=true
-        shift
-    elif [ "$arg" = "--python" ]; then
-        USE_PYTHON=true
         shift
     fi
 done
@@ -49,17 +45,8 @@ fi
 echo "Data generation complete."
 echo ""
 
-# --- Benchmarking value_counts implementation ---
-if [ "$USE_PYTHON" = true ]; then
-    echo "Benchmarking Python implementation: 'cat $DATA_FILE | ./value_counts.py'..."
-    IMPLEMENTATION="./value_counts.py"
-else
-    echo "Benchmarking C implementation: 'cat $DATA_FILE | ./value_counts'..."
-    IMPLEMENTATION="./value_counts"
-fi
-
 # Remove 2>&1 to keep stderr separate from stdout
-(time -p sh -c "cat $DATA_FILE | $IMPLEMENTATION > $OUTPUT_SORTUNIQ") 2> time_value_counts.log
+(time -p sh -c "cat $DATA_FILE | ./value_counts > $OUTPUT_SORTUNIQ") 2> time_value_counts.log
 cat time_value_counts.log
 echo "value_counts finished. Output in $OUTPUT_SORTUNIQ"
 echo ""
