@@ -8,7 +8,7 @@ def print_progress(counts):
     """Prints current results"""
     # Clear previous lines (ANSI escape codes)
     sys.stderr.write("\033[2J\033[H")  # Clear screen and move cursor to top
-    sys.stderr.write("sortuniq intermediate results:\n")
+    sys.stderr.write("value_counts intermediate results:\n")
     # Print current counts
     for key, count in sorted(counts.items()):
         sys.stderr.write(f"{key},{count}\n")

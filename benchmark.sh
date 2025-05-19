@@ -10,7 +10,7 @@ for arg in "$@"; do
 done
 
 # Ensure scripts are executable
-chmod +x sortuniq.py
+chmod +x value_counts.py
 chmod +x generate_data.py
 
 # --- Configuration ---
@@ -19,7 +19,7 @@ NUM_UNIQUE=${2:-50000}   # Default 50k unique values (adjust based on NUM_LINES)
 MIN_LEN=${3:-5}
 MAX_LEN=${4:-20}
 DATA_FILE="test_data.txt"
-OUTPUT_SORTUNIQ="output_sortuniq.txt"
+OUTPUT_SORTUNIQ="output_value_counts.txt"
 OUTPUT_NATIVE_RAW="output_native_raw.txt"
 OUTPUT_NATIVE_FORMATTED="output_native_formatted.txt"
 
@@ -45,14 +45,14 @@ fi
 echo "Data generation complete."
 echo ""
 
-# --- Benchmarking sortuniq.py ---
-echo "Benchmarking 'cat $DATA_FILE | ./sortuniq.py'..."
+# --- Benchmarking value_counts.py ---
+echo "Benchmarking 'cat $DATA_FILE | ./value_counts.py'..."
 # Use /usr/bin/time for more detailed output if available, e.g., /usr/bin/time -v
 # Simple `time` (bash built-in or /usr/bin/time -p) is fine.
 # The output of `time` goes to stderr by default.
 # Redirect stdout to file, stderr of time command will still go to terminal.
-(time -p sh -c "cat $DATA_FILE | ./sortuniq.py > $OUTPUT_SORTUNIQ") 2>&1 | tee time_sortuniq.log | grep -E 'real|user|sys'
-echo "sortuniq.py finished. Output in $OUTPUT_SORTUNIQ"
+(time -p sh -c "cat $DATA_FILE | ./value_counts.py > $OUTPUT_SORTUNIQ") 2>&1 | tee time_value_counts.log | grep -E 'real|user|sys'
+echo "value_counts.py finished. Output in $OUTPUT_SORTUNIQ"
 echo ""
 
 # --- Benchmarking sort | uniq -c ---
@@ -68,7 +68,7 @@ echo ""
 # --- Correctness Check ---
 echo "Verifying correctness..."
 # `uniq -c` outputs "  count value"
-# `sortuniq.py` outputs "value,count"
+# `value_counts.py` outputs "value,count"
 # We need to format one to match the other for diff.
 
 # Format native output: Extract count ($1) and value ($2), print as "value,count"
@@ -92,8 +92,8 @@ fi
 echo ""
 
 echo "--- Timing Summary (from logs) ---"
-echo "sortuniq.py:"
-cat time_sortuniq.log
+echo "value_counts.py:"
+cat time_value_counts.log
 echo ""
 echo "sort | uniq -c:"
 cat time_native.log
@@ -106,9 +106,9 @@ if [ "$PRESERVE" = true ]; then
     echo "$OUTPUT_SORTUNIQ"
     echo "$OUTPUT_NATIVE_RAW"
     echo "$OUTPUT_NATIVE_FORMATTED"
-    echo "time_sortuniq.log"
+    echo "time_value_counts.log"
     echo "time_native.log"
 else
     echo "Cleaning up generated files..."
-    rm -f "$DATA_FILE" "$OUTPUT_SORTUNIQ" "$OUTPUT_NATIVE_RAW" "$OUTPUT_NATIVE_FORMATTED" time_sortuniq.log time_native.log
+    rm -f "$DATA_FILE" "$OUTPUT_SORTUNIQ" "$OUTPUT_NATIVE_RAW" "$OUTPUT_NATIVE_FORMATTED" time_value_counts.log time_native.log
 fi
