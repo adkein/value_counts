@@ -27,7 +27,3 @@ Pass `--rank` (short form `-r`) to make the intermediate results output ordered 
 rather than by value.
 
 Pass `--delim` (short form (`-d`) to adjust the delimiter between the value and the value count in the output.
-
-## Notes
-
-* A python implementation is included but is far less perfomant than the C implementation.
