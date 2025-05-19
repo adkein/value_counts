@@ -17,7 +17,15 @@ the option to periodically print running results, but note that this slows it do
 ## Usage
 
 ```bash
-cat some_big_file | ./value_counts [--progress <n>]
+make
+cat some_big_file | ./value_counts [--progress <n>] [--rank]
 ```
 
 where `n` is the period of printing running results.
+
+Pass `--rank` (short form `-r`) to make the intermediate results output ordered by value count descending
+rather than by value.
+
+## Notes
+
+* A python implementation is included but is far less perfomant than the C implementation.
