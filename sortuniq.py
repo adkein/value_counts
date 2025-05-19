@@ -26,18 +26,18 @@ def main():
     """
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Count and sort unique lines from stdin.')
-    parser.add_argument('--progress', action='store_true', 
+    parser.add_argument('--progress', action='store_true',
                        help='Show progress updates every 0.2 seconds')
     args = parser.parse_args()
 
     counts = Counter()
     stop_event = threading.Event()
     progress_thread = None
-    
+
     # Start progress thread if --progress flag is used
     if args.progress:
         progress_thread = threading.Thread(
-            target=print_progress, 
+            target=print_progress,
             args=(counts, stop_event)
         )
         progress_thread.daemon = True
@@ -52,11 +52,11 @@ def main():
             # Stop progress thread
             stop_event.set()
             progress_thread.join()
-            
+
             # Clear intermediate output
 #            sys.stderr.write("\033[1J\033[H")
             sys.stderr.flush()
-        
+
         # Write final results to stdout
         for key, count in sorted(counts.items()):
             sys.stdout.write(f"{key},{count}\n")
