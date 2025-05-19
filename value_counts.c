@@ -126,9 +126,9 @@ void print_progress(Counter *c, int sort_by_count) {
         fprintf(stderr, "%s,%d\n", entries[i]->key, entries[i]->count);
     }
     
-    // Show truncation message if needed
-    if (c->size > entries_to_show) {
-        fprintf(stderr, "... (%zu more entries)\n", c->size - entries_to_show);
+    // Print counts (using delimiter instead of comma)
+    for (size_t i = 0; i < c->size; i++) {
+        fprintf(stderr, "%s%c%d\n", entries[i]->key, delimiter, entries[i]->count);
     }
     
     free(entries);
@@ -158,8 +158,9 @@ int main(int argc, char *argv[]) {
         if ((strcmp(argv[i], "--progress") == 0) && i + 1 < argc) {
             progress_interval = atoi(argv[i + 1]);
             i++;
-        } else if (strcmp(argv[i], "--rank") == 0 || strcmp(argv[i], "-r") == 0) {
-            sort_by_count = 1;
+        } else if ((strcmp(argv[i], "--delim") == 0 || strcmp(argv[i], "-d") == 0) && i + 1 < argc) {
+            delimiter = argv[i + 1][0];  // Take first character of delimiter argument
+            i++;
         }
     }
     
@@ -206,8 +207,14 @@ int main(int argc, char *argv[]) {
     // Sort and print results (always by key for final output)
     qsort(entries, counts->size, sizeof(Entry*), compare_entries);
     
+    // Update progress output format
     for (size_t i = 0; i < counts->size; i++) {
-        printf("%s,%d\n", entries[i]->key, entries[i]->count);
+        fprintf(stderr, "%s%c%d\n", entries[i]->key, delimiter, entries[i]->count);
+    }
+    
+    // Update final output format
+    for (size_t i = 0; i < counts->size; i++) {
+        printf("%s%c%d\n", entries[i]->key, delimiter, entries[i]->count);
     }
     
     free(entries);
