@@ -7,6 +7,8 @@
 #define MAX_LINE 4096
 #define INITIAL_CAPACITY 16384  // Increased initial size
 
+char delimiter = '\t';  // Global variable for delimiter
+
 // Structure to hold count for each string
 typedef struct Entry {
     char *key;
@@ -90,9 +92,9 @@ void print_progress(Counter *c) {
     // Sort entries
     qsort(entries, c->size, sizeof(Entry*), compare_entries);
     
-    // Print counts
+    // Print counts (using delimiter instead of comma)
     for (size_t i = 0; i < c->size; i++) {
-        fprintf(stderr, "%s,%d\n", entries[i]->key, entries[i]->count);
+        fprintf(stderr, "%s%c%d\n", entries[i]->key, delimiter, entries[i]->count);
     }
     
     free(entries);
@@ -115,7 +117,6 @@ void counter_free(Counter *c) {
 
 int main(int argc, char *argv[]) {
     int progress_interval = 0;
-    char delimiter = '\t';  // Default to tab
     
     // Parse arguments
     for (int i = 1; i < argc; i++) {
