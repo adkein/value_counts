@@ -14,7 +14,7 @@ that you don't need. For large input this makes a big difference to processing t
 This implementation maintains instead a hash table in memory with the values and their counts. You also have
 the option to periodically print running results, but note that this slows it down a bit.
 
-# Usage
+## Usage
 
 ```bash
 cat some_big_file | ./value_counts [--progress <n>]

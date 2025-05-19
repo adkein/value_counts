@@ -1,16 +1,21 @@
 #!/bin/bash
 
-# Check for --preserve flag
+# Check for flags
 PRESERVE=false
+USE_PYTHON=false
 for arg in "$@"; do
     if [ "$arg" = "--preserve" ]; then
         PRESERVE=true
-        shift  # Remove --preserve from args
+        shift
+    elif [ "$arg" = "--python" ]; then
+        USE_PYTHON=true
+        shift
     fi
 done
 
 # Ensure scripts are executable
 chmod +x value_counts.py
+chmod +x value_counts
 chmod +x generate_data.py
 
 # --- Configuration ---
@@ -45,14 +50,17 @@ fi
 echo "Data generation complete."
 echo ""
 
-# --- Benchmarking value_counts.py ---
-echo "Benchmarking 'cat $DATA_FILE | ./value_counts.py'..."
-# Use /usr/bin/time for more detailed output if available, e.g., /usr/bin/time -v
-# Simple `time` (bash built-in or /usr/bin/time -p) is fine.
-# The output of `time` goes to stderr by default.
-# Redirect stdout to file, stderr of time command will still go to terminal.
-(time -p sh -c "cat $DATA_FILE | ./value_counts.py > $OUTPUT_SORTUNIQ") 2>&1 | tee time_value_counts.log | grep -E 'real|user|sys'
-echo "value_counts.py finished. Output in $OUTPUT_SORTUNIQ"
+# --- Benchmarking value_counts implementation ---
+if [ "$USE_PYTHON" = true ]; then
+    echo "Benchmarking Python implementation: 'cat $DATA_FILE | ./value_counts.py'..."
+    IMPLEMENTATION="./value_counts.py"
+else
+    echo "Benchmarking C implementation: 'cat $DATA_FILE | ./value_counts'..."
+    IMPLEMENTATION="./value_counts"
+fi
+
+(time -p sh -c "cat $DATA_FILE | $IMPLEMENTATION > $OUTPUT_SORTUNIQ") 2>&1 | tee time_value_counts.log | grep -E 'real|user|sys'
+echo "value_counts finished. Output in $OUTPUT_SORTUNIQ"
 echo ""
 
 # --- Benchmarking sort | uniq -c ---
@@ -92,7 +100,7 @@ fi
 echo ""
 
 echo "--- Timing Summary (from logs) ---"
-echo "value_counts.py:"
+echo "value_counts:"
 cat time_value_counts.log
 echo ""
 echo "sort | uniq -c:"
