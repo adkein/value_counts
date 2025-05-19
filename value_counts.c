@@ -5,81 +5,111 @@
 #include <unistd.h>
 
 #define MAX_LINE 4096
-#define INITIAL_CAPACITY 1024
+#define INITIAL_CAPACITY 16384  // Increased initial size
 
 // Structure to hold count for each string
-typedef struct {
+typedef struct Entry {
     char *key;
     int count;
+    struct Entry *next;  // For hash table chaining
 } Entry;
 
 // Structure for our "hash table"
 typedef struct {
-    Entry *entries;
+    Entry **buckets;
+    size_t num_buckets;
     size_t size;
-    size_t capacity;
 } Counter;
+
+// Simple hash function for strings
+unsigned long hash(const char *str) {
+    unsigned long hash = 5381;
+    int c;
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; // hash * 33 + c
+    return hash;
+}
 
 // Initialize counter
 Counter* counter_create() {
     Counter *c = malloc(sizeof(Counter));
-    c->entries = malloc(INITIAL_CAPACITY * sizeof(Entry));
+    c->num_buckets = INITIAL_CAPACITY;
+    c->buckets = calloc(c->num_buckets, sizeof(Entry*));
     c->size = 0;
-    c->capacity = INITIAL_CAPACITY;
     return c;
 }
 
 // Compare function for qsort
 int compare_entries(const void *a, const void *b) {
-    return strcmp(((Entry*)a)->key, ((Entry*)b)->key);
+    const Entry *ea = *(const Entry **)a;
+    const Entry *eb = *(const Entry **)b;
+    return strcmp(ea->key, eb->key);
 }
 
 // Find or create entry for a key
 Entry* counter_get(Counter *c, const char *key) {
-    // Linear search (simplified implementation)
-    for (size_t i = 0; i < c->size; i++) {
-        if (strcmp(c->entries[i].key, key) == 0) {
-            return &c->entries[i];
+    unsigned long h = hash(key) % c->num_buckets;
+    
+    // Look for existing entry
+    Entry *entry = c->buckets[h];
+    while (entry) {
+        if (strcmp(entry->key, key) == 0) {
+            return entry;
         }
+        entry = entry->next;
     }
     
-    // Grow array if needed
-    if (c->size >= c->capacity) {
-        c->capacity *= 2;
-        c->entries = realloc(c->entries, c->capacity * sizeof(Entry));
-    }
+    // Create new entry
+    entry = malloc(sizeof(Entry));
+    entry->key = strdup(key);
+    entry->count = 0;
+    entry->next = c->buckets[h];
+    c->buckets[h] = entry;
+    c->size++;
     
-    // Add new entry
-    c->entries[c->size].key = strdup(key);
-    c->entries[c->size].count = 0;
-    return &c->entries[c->size++];
+    return entry;
 }
 
 // Print progress to stderr
 void print_progress(Counter *c) {
     // Clear screen (ANSI escape codes)
     fprintf(stderr, "\033[2J\033[H");
-    fprintf(stderr, "sortuniq intermediate results:\n");
+    fprintf(stderr, "value_counts intermediate results:\n");
     
-    // Create temporary sorted array
-    Entry *sorted = malloc(c->size * sizeof(Entry));
-    memcpy(sorted, c->entries, c->size * sizeof(Entry));
-    qsort(sorted, c->size, sizeof(Entry), compare_entries);
+    // Convert hash table to array for sorting
+    Entry **entries = malloc(c->size * sizeof(Entry*));
+    size_t idx = 0;
+    for (size_t i = 0; i < c->num_buckets; i++) {
+        Entry *entry = c->buckets[i];
+        while (entry) {
+            entries[idx++] = entry;
+            entry = entry->next;
+        }
+    }
+    
+    // Sort entries
+    qsort(entries, c->size, sizeof(Entry*), compare_entries);
     
     // Print counts
     for (size_t i = 0; i < c->size; i++) {
-        fprintf(stderr, "%s,%d\n", sorted[i].key, sorted[i].count);
+        fprintf(stderr, "%s,%d\n", entries[i]->key, entries[i]->count);
     }
     
-    free(sorted);
+    free(entries);
     fflush(stderr);
 }
 
 void counter_free(Counter *c) {
-    for (size_t i = 0; i < c->size; i++) {
-        free(c->entries[i].key);
+    for (size_t i = 0; i < c->num_buckets; i++) {
+        Entry *entry = c->buckets[i];
+        while (entry) {
+            Entry *next = entry->next;
+            free(entry->key);
+            free(entry);
+            entry = next;
+        }
     }
-    free(c->entries);
+    free(c->buckets);
     free(c);
 }
 
@@ -123,12 +153,25 @@ int main(int argc, char *argv[]) {
         fflush(stderr);
     }
     
-    // Print final results
-    qsort(counts->entries, counts->size, sizeof(Entry), compare_entries);
-    for (size_t i = 0; i < counts->size; i++) {
-        printf("%s,%d\n", counts->entries[i].key, counts->entries[i].count);
+    // Convert hash table to array for sorting
+    Entry **entries = malloc(counts->size * sizeof(Entry*));
+    size_t idx = 0;
+    for (size_t i = 0; i < counts->num_buckets; i++) {
+        Entry *entry = counts->buckets[i];
+        while (entry) {
+            entries[idx++] = entry;
+            entry = entry->next;
+        }
     }
     
+    // Sort and print results
+    qsort(entries, counts->size, sizeof(Entry*), compare_entries);
+    
+    for (size_t i = 0; i < counts->size; i++) {
+        printf("%s,%d\n", entries[i]->key, entries[i]->count);
+    }
+    
+    free(entries);
     counter_free(counts);
     return 0;
 } 

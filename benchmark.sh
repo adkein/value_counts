@@ -59,7 +59,9 @@ else
     IMPLEMENTATION="./value_counts"
 fi
 
-(time -p sh -c "cat $DATA_FILE | $IMPLEMENTATION > $OUTPUT_SORTUNIQ") 2>&1 | tee time_value_counts.log | grep -E 'real|user|sys'
+# Remove 2>&1 to keep stderr separate from stdout
+(time -p sh -c "cat $DATA_FILE | $IMPLEMENTATION > $OUTPUT_SORTUNIQ") 2> time_value_counts.log
+cat time_value_counts.log
 echo "value_counts finished. Output in $OUTPUT_SORTUNIQ"
 echo ""
 
